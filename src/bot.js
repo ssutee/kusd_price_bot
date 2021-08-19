@@ -24,6 +24,8 @@ bot.onText(/\/kusd/, async (msg) => {
   const usdt = await client.getAsync('usdt');
   const usdc = await client.getAsync('usdc');
   const totalSupply = await client.getAsync('total-supply');
+  const collateralRatio = await client.getAsync('collateral-ratio');
+  const growthRatio = await client.getAsync('growth-ratio');
 
   const text = 
   `oracle price: $${parseFloat(fromWei(usd)).toFixed(4)}
@@ -34,6 +36,9 @@ swap price:
    ${parseFloat(fromWei(usdc)).toFixed(4)} USDC
 
 total supply: ${parseFloat(fromWei(totalSupply)).toLocaleString()}
+
+collateral ratio: ${(parseFloat(fromWei(collateralRatio))*100).toLocaleString()}%
+growth ratio: ${(parseFloat(fromWei(growthRatio))*100).toLocaleString()}%
 `
 
   bot.sendMessage(chatId, text);

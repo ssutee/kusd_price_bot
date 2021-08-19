@@ -3,7 +3,8 @@ require("dotenv").config();
 const redis = require("redis");
 const client = redis.createClient();
 
-const { toWei, fromWei } = require("web3-utils");
+const { toWei } = require("web3-utils");
+const { default: BigNumber } = require("bignumber.js");
 
 const {
   SENDER_PRIVATE_KEY,
@@ -13,6 +14,8 @@ const {
   USDT_ADDRESS,
   ROUTER_ADDRESS,
   POOL_ADDRESS,
+  CONTROLLER_ADDRESS,
+  RESERVE_ADDRESS,
   BSC_WSS_RPC,
   ROUTERS
 } = process.env;
@@ -29,9 +32,11 @@ const kusd = new web3.eth.Contract(kusdABI, KUSD_ADDRESS);
 const { abi: routerABI } = require("./Router.json");
 const router = new web3.eth.Contract(routerABI, ROUTER_ADDRESS);
 
-const { abi: poolABI } = require("./Pool.json");
-const { default: BigNumber } = require("bignumber.js");
-const pool = new web3.eth.Contract(poolABI, POOL_ADDRESS);
+const { abi: controllerABI } = require("./Controller.json");
+const controller = new web3.eth.Contract(controllerABI, CONTROLLER_ADDRESS);
+
+const { abi: reserveABI } = require("./Reserve.json");
+const reserve = new web3.eth.Contract(reserveABI, RESERVE_ADDRESS);
 
 const getSwapRate = async (outToken) => {
   const routers = ROUTERS.split(" ");
@@ -67,29 +72,35 @@ const getPrice = async () => {
   return price.toString();
 }
 
+const getCollateralRatio = async () => {
+  const collateralRatio = await reserve.methods.globalCollateralRatio().call({
+    from: sender.address
+  });
+  return collateralRatio.toString();
+}
+
+const getGrowthRatio = async () => {
+  const growthRatio = await controller.methods.growthRatio().call({
+    from: sender.address
+  });
+  return growthRatio.toString();
+}
+
 const main = async () => {
   web3.eth
     .subscribe("newBlockHeaders", async (error, result) => {
       if (!error) {        
         const block = await web3.eth.getBlock('latest');
+        console.log(block.number);
         if (block.number % 10 == 0) {
-          console.log("block:", block.number);
           client.set("timestamp", block.timestamp, redis.print);
-
-          console.log("total supply:", await getTotalSupply());
           client.set("total-supply", await getTotalSupply(), redis.print);
-
-          console.log("price:", await getPrice(), "USD");   
           client.set("usd", await getPrice(), redis.print);
-
-          console.log("swap:", await getSwapRate(BUSD_ADDRESS), "BUSD");
           client.set("busd", await getSwapRate(BUSD_ADDRESS), redis.print);
-
-          console.log("swap:", await getSwapRate(USDC_ADDRESS), "USDC");
           client.set("usdc", await getSwapRate(USDC_ADDRESS), redis.print);
-
-          console.log("swap:", await getSwapRate(USDT_ADDRESS), "USDT");
           client.set("usdt", await getSwapRate(USDT_ADDRESS), redis.print);
+          client.set("collateral-ratio", await getCollateralRatio());
+          client.set("growth-ratio", await getGrowthRatio());
         }
         return;
       }
