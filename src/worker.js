@@ -20,8 +20,19 @@ const {
   ROUTERS
 } = process.env;
 
+const options = {
+  // Enable auto reconnection
+  reconnect: {
+      auto: true,
+      delay: 5000, // ms
+      maxAttempts: 5,
+      onTimeout: false
+  }
+};
+
 const Web3 = require("web3");
-const web3 = new Web3(BSC_WSS_RPC);
+const wss = new Web3.providers.WebsocketProvider(BSC_WSS_RPC, options) 
+const web3 = new Web3(wss);
 
 web3.eth.accounts.wallet.add(SENDER_PRIVATE_KEY);
 const sender = web3.eth.accounts.wallet[0];
