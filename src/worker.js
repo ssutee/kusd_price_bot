@@ -120,7 +120,4 @@ const main = async () => {
     .on("error", console.error);
 };
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
