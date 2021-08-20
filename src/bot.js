@@ -7,6 +7,10 @@ const client = redis.createClient();
 
 const { toWei, fromWei } = require("web3-utils");
 
+const dayjs = require('dayjs')
+
+dayjs.locale('th');
+
 const TelegramBot = require('node-telegram-bot-api');
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
@@ -29,7 +33,7 @@ bot.onText(/\/kusd/, async (msg) => {
   const timestamp = await client.getAsync('timestamp');
   const date = new Date();
   date.setTime(parseInt(timestamp)*1000);
-
+  const day = dayjs(date);
   const text = `
 oracle price: $${parseFloat(fromWei(usd)).toFixed(4)}
 
@@ -43,7 +47,7 @@ total supply: ${parseFloat(fromWei(totalSupply)).toLocaleString()}
 collateral ratio: ${(parseFloat(fromWei(collateralRatio))*100).toLocaleString()}%
 growth ratio: ${(parseFloat(fromWei(growthRatio))*100).toLocaleString()}%
 
-⏱ ${date.toLocaleDateString('th-TH')} ${date.toLocaleTimeString('th-TH')}
+⏱ ${day.format('DD/MM/YYYY HH:mm:ss')}
 `
   bot.sendMessage(chatId, text);
 });
